@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import { getLeague, getLeagueUsers, getLeagueRosters, getAllPlayers } from './sleeper.js';
+import { getLeague, getLeagueUsers, getLeagueRosters, getAllPlayers, getNFLState, getLeagueMatchups } from './sleeper.js';
 import { buildSuggestions } from './tradeSuggestions.js';
 
 dotenv.config();
@@ -51,6 +51,24 @@ app.get('/api/players', async (req, res) => {
     res.json(players);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch players', details: err.message });
+  }
+});
+
+app.get('/api/state/nfl', async (req, res) => {
+  try {
+    const state = await getNFLState();
+    res.json(state);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch NFL state', details: err.message });
+  }
+});
+
+app.get('/api/league/:leagueId/matchups/:week', async (req, res) => {
+  try {
+    const data = await getLeagueMatchups(req.params.leagueId, req.params.week);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch matchups', details: err.message });
   }
 });
 

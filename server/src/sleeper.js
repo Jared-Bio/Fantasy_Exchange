@@ -22,4 +22,14 @@ export async function getAllPlayers() {
   return data;
 }
 
+export async function getNFLState() {
+  const { data } = await axios.get(`${SLEEPER_BASE}/state/nfl`);
+  return data;
+}
+
+export async function getLeagueMatchups(leagueId, week) {
+  const { data } = await axios.get(`${SLEEPER_BASE}/league/${leagueId}/matchups/${week}`);
+  return data;
+}
+
 
