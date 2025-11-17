@@ -1,0 +1,46 @@
+Current Season:
+Game Log
+  - Week #
+  - Opponent
+  - Fantasy Points
+  - Snap %
+  - Bye week
+  - Passing Stats:
+    - Attemps
+    - Completions
+    - Total Yards
+    - Touchdowns
+    - Interceptions
+    - Passer Rating
+  - Rushing Stats:
+    - Attempts
+    - Yards
+    - Yards per carry
+    - Touchdowns
+    - Fumbles
+  - Receiving Stats:
+    - Targets
+    - Receptions
+    - Total Yards
+    - Yards per target
+    - Yards per catch
+    - Touchdowns
+    - Fumbles
+Career
+  - Year
+  - Team they played for
+  - Games played
+  - Total fantasy points
+  - Position rank in whichever league style you are playing in (PPR, Half-PPR, etc.)
+  - Overal college stats
+Player Profile
+  - Full Name, with nicknames in ()
+  - Age
+  - Height
+  - Weight
+  - Position
+  - Team
+  - Number
+Dynasty Specific Values
+  - Overall Rank
+  - Positional Rank
