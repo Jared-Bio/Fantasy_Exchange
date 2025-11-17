@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider.jsx'
 import { Button } from '../components/ui/button.jsx'
 import { Card } from '../components/ui/card.jsx'
@@ -7,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs.
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000/api'
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const { user, logout, saveLeagueId, saveMyRosterId } = useAuth()
   const [editing, setEditing] = useState(false)
   const [leagueIdInput, setLeagueIdInput] = useState(user?.leagueId || '')
@@ -126,6 +128,9 @@ export default function Dashboard() {
             <h1 className="text-lg font-semibold">Dashboard</h1>
           </div>
           <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => navigate('/trade-calculator')}>
+              Trade Calculator
+            </Button>
             <span className="text-sm text-slate-600">{user?.username}</span>
             <Button variant="outline" onClick={logout}>Log out</Button>
           </div>
@@ -174,7 +179,9 @@ export default function Dashboard() {
                           <div key={pid} className="border rounded-xl p-3 bg-white flex items-center gap-3 shadow-sm">
                             <img src={playerImageUrl(pid)} onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/64x64?text=NO+IMG'}} alt="player" className="w-12 h-12 rounded-lg object-cover border" />
                             <div className="min-w-0">
-                              <div className="text-sm font-medium truncate text-slate-900">{p?.full_name || p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : pid}</div>
+                              <Link to={`/player/${pid}`} className="text-sm font-medium truncate text-blue-600 hover:underline block">
+                                {p?.full_name || p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : pid}
+                              </Link>
                               <div className="text-xs text-slate-600">{p?.position || 'POS'} · Rank {positionRank(p)}</div>
                             </div>
                           </div>
