@@ -114,7 +114,7 @@ export default function TradeCalculator() {
       const response = await fetch(`${API_BASE}/player/stats/${playerId}`)
       if (response.ok) {
         const data = await response.json()
-        const stats = data.apiFootballStats
+        const stats = data.sportsDataStats
         if (stats) {
           setPlayerStats(prev => new Map(prev).set(playerId, stats))
           return stats

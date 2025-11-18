@@ -3,111 +3,85 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const API_FOOTBALL_BASE = 'https://v3.football.api-sports.io';
-const API_KEY = process.env.API_FOOTBALL_KEY || '9b47a309904b7de3d1a4419e488c85d2';
+const API_BASE = 'https://api.sportsdata.io/v2/json';
+const API_KEY = process.env.SPORTSDATA_API_KEY || '2b98195b2a3e4cf68bc1608978a8b491';
 
-console.log('[API-Football] API Key loaded:', API_KEY ? `${API_KEY.substring(0, 8)}...` : 'NOT SET');
+console.log('[SportsData] API Key loaded:', API_KEY ? 'SET' : 'NOT SET');
 
 const apiClient = axios.create({
-  baseURL: API_FOOTBALL_BASE,
+  baseURL: API_BASE,
   headers: {
-    'x-apisports-key': API_KEY,
+    'Ocp-Apim-Subscription-Key': API_KEY,
   },
 });
 
 /**
- * Search for a player by name, team, and position
- * @param {string} name - Player name
- * @param {string} team - Team abbreviation (optional)
- * @param {number} season - Season year (e.g., 2024)
+ * Search for players by name
  */
 export async function searchPlayer(name, team = null, season = 2024) {
   try {
-    // Cap season at 2024 for now - free API may not have 2025 data
-    const searchSeason = Math.min(season, 2024);
+    console.log(`[SportsData] Getting all players to search for: ${name}`);
     
-    const params = {
-      search: name,
-      season: searchSeason,
-      league: 1, // NFL league ID
-    };
-    if (team) params.team = team;
-
-    console.log(`[API-Football] Searching player: ${name}, season: ${searchSeason}`);
-    const { data } = await apiClient.get('/players', { params });
+    const { data } = await apiClient.get('/Players');
     
-    // Log response for debugging
-    if (data?.errors && data.errors.length > 0) {
-      console.error('[API-Football] API errors:', JSON.stringify(data.errors, null, 2));
-    }
+    if (!data) return [];
     
-    if (data?.response && data.response.length > 0) {
-      console.log(`[API-Football] Found ${data.response.length} player(s) matching "${name}"`);
-    } else {
-      console.log(`[API-Football] No players found matching "${name}"`);
-    }
+    // Filter players by name
+    const filteredPlayers = data.filter(player => {
+      const fullName = `${player.FirstName} ${player.LastName}`.toLowerCase();
+      const searchName = name.toLowerCase();
+      return fullName.includes(searchName);
+    });
     
-    return data?.response || [];
+    console.log(`[SportsData] Found ${filteredPlayers.length} player(s) matching "${name}"`);
+    return filteredPlayers.slice(0, 10); // Limit results
+    
   } catch (err) {
-    console.error('[API-Football] Error searching player:', err.message);
-    if (err.response) {
-      console.error('[API-Football] Response Status:', err.response.status);
-      console.error('[API-Football] Response Data:', JSON.stringify(err.response.data, null, 2));
-    } else if (err.request) {
-      console.error('[API-Football] No response received. Request:', err.request);
-    }
+    console.error('[SportsData] Error searching players:', err.message);
     return [];
   }
 }
 
 /**
- * Get player statistics for a specific season
- * @param {number} playerId - API-football player ID
- * @param {number} season - Season year (e.g., 2024)
+ * Get player details and stats
  */
 export async function getPlayerStats(playerId, season = 2024) {
   try {
-    // Cap season at 2024 for now - free API may not have 2025 data
-    const searchSeason = Math.min(season, 2024);
+    console.log(`[SportsData] Fetching player details for ID: ${playerId}`);
     
-    console.log(`[API-Football] Fetching stats for player ID: ${playerId}, season: ${searchSeason}`);
-    const { data } = await apiClient.get('/players', {
-      params: {
-        id: playerId,
-        season: searchSeason,
-        league: 1, // NFL league ID
-      },
-    });
+    const { data } = await apiClient.get(`/Player/${playerId}`);
     
-    // Log response for debugging
-    if (data?.errors && data.errors.length > 0) {
-      console.error('[API-Football] API errors:', JSON.stringify(data.errors, null, 2));
-    }
-    
-    if (data?.response?.[0]) {
-      console.log(`[API-Football] Stats found for player ID ${playerId}`);
+    if (data) {
+      console.log(`[SportsData] Player details found for ID ${playerId}`);
     } else {
-      console.log(`[API-Football] No stats found for player ID ${playerId}`);
+      console.log(`[SportsData] No details found for player ID ${playerId}`);
     }
     
-    return data?.response?.[0] || null;
+    return data || null;
   } catch (err) {
-    console.error('[API-Football] Error fetching player stats:', err.message);
-    if (err.response) {
-      console.error('[API-Football] Response Status:', err.response.status);
-      console.error('[API-Football] Response Data:', JSON.stringify(err.response.data, null, 2));
-    } else if (err.request) {
-      console.error('[API-Football] No response received');
-    }
+    console.error('[SportsData] Error fetching player details:', err.message);
     return null;
   }
 }
 
 /**
- * Get player statistics by searching name and matching team
- * This is useful when we have Sleeper player data but need API-football stats
- * @param {object} sleeperPlayer - Sleeper player object
- * @param {number} season - Season year (e.g., 2024)
+ * Get player seasonal stats
+ */
+export async function getPlayerSeasonStats(playerId, season = 2024) {
+  try {
+    console.log(`[SportsData] Fetching season stats for player ${playerId}, season ${season}`);
+    
+    const { data } = await apiClient.get(`/PlayerSeasonStatsByPlayerID/${season}/${playerId}`);
+    
+    return data || null;
+  } catch (err) {
+    console.error('[SportsData] Error fetching season stats:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Get player stats by Sleeper data (matching by name/team)
  */
 export async function getPlayerStatsBySleeperData(sleeperPlayer, season = 2024) {
   const playerName = sleeperPlayer?.full_name || 
@@ -117,27 +91,26 @@ export async function getPlayerStatsBySleeperData(sleeperPlayer, season = 2024) 
   
   if (!playerName) return null;
 
-  // Try to find player by name
+  // Search for player by name
   const players = await searchPlayer(playerName, null, season);
   
   if (players.length === 0) return null;
   
   // If we have team info from Sleeper, try to match by team
-  // Sleeper uses team abbreviations like "KC", "SF", etc.
   if (sleeperPlayer?.team && players.length > 1) {
     const teamMatch = players.find(p => {
-      const apiTeam = p?.team?.code || p?.team?.name?.toUpperCase();
+      const apiTeam = p.Team?.toUpperCase();
       const sleeperTeam = sleeperPlayer.team?.toUpperCase();
       return apiTeam?.includes(sleeperTeam) || sleeperTeam?.includes(apiTeam);
     });
     if (teamMatch) {
-      return await getPlayerStats(teamMatch.player.id, season);
+      return await getPlayerSeasonStats(teamMatch.PlayerID, season);
     }
   }
   
-  // Return first match or best guess
-  if (players[0]?.player?.id) {
-    const stats = await getPlayerStats(players[0].player.id, season);
+  // Return first match
+  if (players[0]?.PlayerID) {
+    const stats = await getPlayerSeasonStats(players[0].PlayerID, season);
     return stats;
   }
   
@@ -145,82 +118,31 @@ export async function getPlayerStatsBySleeperData(sleeperPlayer, season = 2024) 
 }
 
 /**
- * Get player game logs for a season
- * @param {number} playerId - API-football player ID
- * @param {number} season - Season year (e.g., 2024)
+ * Get player game logs
  */
 export async function getPlayerGameLogs(playerId, season = 2024) {
   try {
-    // Cap season at 2024 for now - free API may not have 2025 data
-    const searchSeason = Math.min(season, 2024);
+    console.log(`[SportsData] Fetching game logs for player ID: ${playerId}`);
     
-    console.log(`[API-Football] Fetching game logs for player ID: ${playerId}, season: ${searchSeason}`);
-    const { data } = await apiClient.get('/fixtures/players', {
-      params: {
-        player: playerId,
-        season: searchSeason,
-        league: 1, // NFL league ID
-      },
-    });
+    const { data } = await apiClient.get(`/PlayerGameStatsByPlayerID/${season}/${playerId}`);
     
-    // Log response for debugging
-    if (data?.errors && data.errors.length > 0) {
-      console.error('[API-Football] API errors:', JSON.stringify(data.errors, null, 2));
-    }
+    console.log(`[SportsData] Found ${data?.length || 0} game logs`);
+    return data || [];
     
-    if (data?.response) {
-      console.log(`[API-Football] Found ${data.response.length} game logs`);
-    } else {
-      console.log(`[API-Football] No game logs found`);
-    }
-    
-    return data?.response || [];
   } catch (err) {
-    console.error('[API-Football] Error fetching game logs:', err.message);
-    if (err.response) {
-      console.error('[API-Football] Response Status:', err.response.status);
-      console.error('[API-Football] Response Data:', JSON.stringify(err.response.data, null, 2));
-    } else if (err.request) {
-      console.error('[API-Football] No response received');
-    }
+    console.error('[SportsData] Error fetching game logs:', err.message);
     return [];
   }
 }
 
-/**
- * Get current season year
- */
 export function getCurrentSeason() {
   const now = new Date();
   const year = now.getFullYear();
-  const month = now.getMonth(); // 0-11, where 0 = January
+  const month = now.getMonth();
   
-  // NFL season starts in September, so if it's before September, use previous year
-  // For 2025, if it's early in the year, use 2024 season
-  if (month < 8) { // January (0) through August (7)
-    const prevYear = year - 1;
-    // Cap at 2024 since 2025 season data may not be available
-    return Math.min(prevYear, 2024);
+  // NFL season starts in September
+  if (month < 8) { // January-August
+    return year - 1;
   }
-  // If we're in the NFL season (Sept-Dec), use current year
-  // But cap at 2024 for now since 2025 season hasn't started or data may be limited
-  return Math.min(year, 2024);
+  return year;
 }
-
-/**
- * Get all available seasons for a player
- */
-export async function getPlayerSeasons(playerId) {
-  try {
-    const { data } = await apiClient.get('/players/seasons', {
-      params: {
-        player: playerId,
-      },
-    });
-    return data?.response || [];
-  } catch (err) {
-    console.error('Error fetching player seasons:', err.message);
-    return [];
-  }
-}
-

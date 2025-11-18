@@ -168,26 +168,128 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="md:col-span-2">
-                  <div className="font-medium mb-2">My Roster</div>
                   {!myRoster ? (
                     <div className="text-sm text-slate-700">Select your team from the left to view your roster.</div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {(myRoster.players || []).map(pid => {
-                        const p = playerMap?.[pid]
-                        return (
-                          <div key={pid} className="border rounded-xl p-3 bg-white flex items-center gap-3 shadow-sm">
-                            <img src={playerImageUrl(pid)} onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/64x64?text=NO+IMG'}} alt="player" className="w-12 h-12 rounded-lg object-cover border" />
-                            <div className="min-w-0">
-                              <Link to={`/player/${pid}`} className="text-sm font-medium truncate text-blue-600 hover:underline block">
-                                {p?.full_name || p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : pid}
-                              </Link>
-                              <div className="text-xs text-slate-600">{p?.position || 'POS'} · Rank {positionRank(p)}</div>
+                    <div className="md:col-span-2">
+                    <div className="font-medium mb-2">My Roster</div>
+                    {!myRoster ? (
+                      <div className="text-sm text-slate-700">Select your team from the left to view your roster.</div>
+                    ) : (
+                      <div className="space-y-6">
+                        {/* Starting Lineup */}
+                        {(myRoster.starters && myRoster.starters.length > 0) && (
+                          <div>
+                            <h4 className="font-medium text-sm text-slate-700 mb-3 flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              Starting Lineup ({myRoster.starters.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {myRoster.starters.map(pid => {
+                                const p = playerMap?.[pid]
+                                return (
+                                  <div key={pid} className="border rounded-xl p-3 bg-white flex items-center gap-3 shadow-sm">
+                                    <img src={playerImageUrl(pid)} onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/64x64?text=NO+IMG'}} alt="player" className="w-12 h-12 rounded-lg object-cover border" />
+                                    <div className="min-w-0 flex-1">
+                                      <Link to={`/player/${pid}`} className="text-sm font-medium truncate text-blue-600 hover:underline block">
+                                        {p?.full_name || p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : pid}
+                                      </Link>
+                                      <div className="text-xs text-slate-600">{p?.position || 'POS'} · Rank {positionRank(p)}</div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
                             </div>
                           </div>
-                        )
-                      })}
-                    </div>
+                        )}
+                  
+                        {/* Bench Players */}
+                        {(() => {
+                          const benchPlayers = (myRoster.players || []).filter(pid => 
+                            !(myRoster.starters || []).includes(pid) && 
+                            !(myRoster.reserve || []).includes(pid) && 
+                            !(myRoster.taxi || []).includes(pid)
+                          )
+                          return benchPlayers.length > 0 && (
+                            <div>
+                              <h4 className="font-medium text-sm text-slate-700 mb-3 flex items-center gap-2">
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                Bench ({benchPlayers.length})
+                              </h4>
+                              <div className="space-y-2">
+                                {benchPlayers.map(pid => {
+                                  const p = playerMap?.[pid]
+                                  return (
+                                    <div key={pid} className="border rounded-xl p-3 bg-white flex items-center gap-3 shadow-sm opacity-75">
+                                      <img src={playerImageUrl(pid)} onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/64x64?text=NO+IMG'}} alt="player" className="w-12 h-12 rounded-lg object-cover border" />
+                                      <div className="min-w-0 flex-1">
+                                        <Link to={`/player/${pid}`} className="text-sm font-medium truncate text-blue-600 hover:underline block">
+                                          {p?.full_name || p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : pid}
+                                        </Link>
+                                        <div className="text-xs text-slate-600">{p?.position || 'POS'} · Rank {positionRank(p)}</div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )
+                        })()}
+                  
+                        {/* Injured Reserve */}
+                        {(myRoster.reserve && myRoster.reserve.length > 0) && (
+                          <div>
+                            <h4 className="font-medium text-sm text-slate-700 mb-3 flex items-center gap-2">
+                              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                              Injured Reserve ({myRoster.reserve.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {myRoster.reserve.map(pid => {
+                                const p = playerMap?.[pid]
+                                return (
+                                  <div key={pid} className="border rounded-xl p-3 bg-white flex items-center gap-3 shadow-sm opacity-60">
+                                    <img src={playerImageUrl(pid)} onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/64x64?text=NO+IMG'}} alt="player" className="w-12 h-12 rounded-lg object-cover border" />
+                                    <div className="min-w-0 flex-1">
+                                      <Link to={`/player/${pid}`} className="text-sm font-medium truncate text-blue-600 hover:underline block">
+                                        {p?.full_name || p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : pid}
+                                      </Link>
+                                      <div className="text-xs text-slate-600">{p?.position || 'POS'} · Rank {positionRank(p)}</div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                  
+                        {/* Taxi Squad */}
+                        {(myRoster.taxi && myRoster.taxi.length > 0) && (
+                          <div>
+                            <h4 className="font-medium text-sm text-slate-700 mb-3 flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              Taxi Squad ({myRoster.taxi.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {myRoster.taxi.map(pid => {
+                                const p = playerMap?.[pid]
+                                return (
+                                  <div key={pid} className="border rounded-xl p-3 bg-white flex items-center gap-3 shadow-sm opacity-50">
+                                    <img src={playerImageUrl(pid)} onError={(e)=>{e.currentTarget.src='https://via.placeholder.com/64x64?text=NO+IMG'}} alt="player" className="w-12 h-12 rounded-lg object-cover border" />
+                                    <div className="min-w-0 flex-1">
+                                      <Link to={`/player/${pid}`} className="text-sm font-medium truncate text-blue-600 hover:underline block">
+                                        {p?.full_name || p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : pid}
+                                      </Link>
+                                      <div className="text-xs text-slate-600">{p?.position || 'POS'} · Rank {positionRank(p)}</div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   )}
                 </div>
               </div>

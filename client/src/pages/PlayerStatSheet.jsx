@@ -46,7 +46,7 @@ export default function PlayerStatSheet() {
 
       if (statsRes) {
         setSleeperPlayer(statsRes.sleeperPlayer)
-        setStats(statsRes.apiFootballStats)
+        setStats(statsRes.sportsDataStats)
         setSeason(statsRes.season || season)
       } else {
         // Fallback: try to get just Sleeper player data
@@ -71,6 +71,12 @@ export default function PlayerStatSheet() {
 
   function playerImageUrl(playerId) {
     return `https://sleepercdn.com/content/nfl/players/${playerId}.jpg`
+  }
+
+  // get player demographics from sportsdata.io
+  // Name, Age, Height, Weight, Position, Team, College team, Fantasy Position Rank, Fantasy Overall Rank
+  function getPlayerDemographics(playerId) {
+    return `https://api.sportsdata.io/v3/nfl/scores/json/Players?key=2b98195b2a3e4cf68bc1608978a8b491&playerid=${playerId}`
   }
 
   function getPlayerName() {
@@ -98,8 +104,8 @@ export default function PlayerStatSheet() {
   }
 
   const seasonStats = getSeasonStats()
-  const playerInfo = stats?.player || {}
-  const teamInfo = stats?.team || {}
+  const playerInfo = stats?.player || sleeperPlayer || {}
+  const teamInfo = stats?.team || { name: sleeperPlayer?.team || 'N/A' }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
@@ -142,11 +148,11 @@ export default function PlayerStatSheet() {
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold mb-2">{getPlayerName()}</h2>
                   <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-                    <div><strong>Position:</strong> {sleeperPlayer.position || '-'}</div>
-                    {teamInfo.name && <div><strong>Team:</strong> {teamInfo.name}</div>}
-                    {playerInfo.age && <div><strong>Age:</strong> {playerInfo.age}</div>}
-                    {playerInfo.height && <div><strong>Height:</strong> {playerInfo.height}</div>}
-                    {playerInfo.weight && <div><strong>Weight:</strong> {playerInfo.weight}</div>}
+                    <div><strong>Position:</strong> {sleeperPlayer?.position || '-'}</div>
+                    <div><strong>Team:</strong> {sleeperPlayer?.team || '-'}</div>
+                    {sleeperPlayer.age && <div><strong>Age:</strong> {sleeperPlayer.age}</div>}
+                    {sleeperPlayer.height && <div><strong>Height:</strong> {sleeperPlayer.height}</div>}
+                    {sleeperPlayer.weight && <div><strong>Weight:</strong> {sleeperPlayer.weight}</div>}
                   </div>
                   <div className="mt-4">
                     <label className="text-sm text-slate-600 mr-2">Season:</label>
@@ -167,7 +173,16 @@ export default function PlayerStatSheet() {
                 </div>
               </div>
             </Card>
-
+            {!stats && (
+              <Card className="p-6 mb-6 border-yellow-200 bg-yellow-50">
+                <div className="text-center text-yellow-800">
+                  <div className="text-lg font-medium mb-2">No NFL Statistics Available</div>
+                  <div className="text-sm">
+                    This player may be a college athlete, rookie, or injured player without NFL game data.
+                  </div>
+                </div>
+              </Card>
+            )}
             {/* Stats Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList>

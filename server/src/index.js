@@ -95,7 +95,7 @@ app.get('/api/league/:leagueId/suggestions', async (req, res) => {
   }
 });
 
-// API-football endpoints
+// SportsData endpoints
 app.get('/api/player/stats/:sleeperPlayerId', async (req, res) => {
   try {
     const sleeperPlayerId = req.params.sleeperPlayerId;
@@ -114,16 +114,16 @@ app.get('/api/player/stats/:sleeperPlayerId', async (req, res) => {
     
     console.log(`[API] Sleeper player found: ${sleeperPlayer.full_name || sleeperPlayer.first_name + ' ' + sleeperPlayer.last_name}`);
     
-    // Get stats from API-football
+    // Get stats from SportsData
     const stats = await getPlayerStatsBySleeperData(sleeperPlayer, season);
     
     if (!stats) {
-      console.log(`[API] Stats not found in API-football for ${sleeperPlayer.full_name || sleeperPlayer.first_name + ' ' + sleeperPlayer.last_name}`);
-      return res.status(404).json({ error: 'Player stats not found in API-football' });
+      console.log(`[API] Stats not found in SportsData for ${sleeperPlayer.full_name || sleeperPlayer.first_name + ' ' + sleeperPlayer.last_name}`);
+      return res.status(404).json({ error: 'Player stats not found in SportsData' });
     }
     
     console.log(`[API] Stats found successfully`);
-    res.json({ sleeperPlayer, apiFootballStats: stats, season });
+    res.json({ sleeperPlayer, sportsDataStats: stats, season });
   } catch (err) {
     console.error('[API] Error fetching player stats:', err);
     res.status(500).json({ error: 'Failed to fetch player stats', details: err.message });
@@ -136,8 +136,8 @@ app.get('/api/player/gamelogs/:sleeperPlayerId', async (req, res) => {
     const season = req.query.season ? parseInt(req.query.season) : getCurrentSeason();
     
     console.log(`[API] Fetching game logs for player ${sleeperPlayerId}, season ${season}`);
-    
-    // First, get Sleeper player data to find API-football ID
+      
+      // First, get Sleeper player data to find SportsData ID
     const allPlayers = await getAllPlayers();
     const sleeperPlayer = allPlayers[sleeperPlayerId];
     
@@ -148,19 +148,21 @@ app.get('/api/player/gamelogs/:sleeperPlayerId', async (req, res) => {
     
     console.log(`[API] Sleeper player found: ${sleeperPlayer.full_name || sleeperPlayer.first_name + ' ' + sleeperPlayer.last_name}`);
     
-    // Get API-football player data
-    const apiFootballData = await getPlayerStatsBySleeperData(sleeperPlayer, season);
+    // Get SportsData data directly (no .player.id needed)
+    const sportsDataData = await getPlayerStatsBySleeperData(sleeperPlayer, season);
     
-    if (!apiFootballData || !apiFootballData.player?.id) {
-      console.log(`[API] Player not found in API-football for game logs`);
-      // Return empty array instead of 404 so the page can still load
-      return res.json({ gameLogs: [], season, error: 'Player stats not found in API-football' });
+    if (!sportsDataData || !sportsDataData.PlayerID) {
+      return res.json({ gameLogs: [], season, error: 'Player stats not found in SportsDataIO' });
     }
     
-    console.log(`[API] API-football player ID: ${apiFootballData.player.id}`);
+    const playerId = sportsDataData.PlayerID;if (!playerId) {
+    return res.json({ gameLogs: [], season, error: 'Could not find player ID in SportsData data' });
+    }
+    
+    console.log(`[API] SportsData player ID: ${playerId}`);
     
     // Get game logs
-    const gameLogs = await getPlayerGameLogs(apiFootballData.player.id, season);
+    const gameLogs = await getPlayerGameLogs(playerId, season);
     
     console.log(`[API] Found ${gameLogs.length} game logs`);
     res.json({ gameLogs, season });
@@ -186,4 +188,9 @@ app.listen(PORT, () => {
   console.log(`Fantasy Exchange server running on http://localhost:${PORT}`);
 });
 
-
+// Add to index.js
+app.get('/api/test-connection', async (req, res) => {
+  const { testApiConnection } = await import('./apiFootball.js');
+  const result = await testApiConnection();
+  res.json(result);
+});
